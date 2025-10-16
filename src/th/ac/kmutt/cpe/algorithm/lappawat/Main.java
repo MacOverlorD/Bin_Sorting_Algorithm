@@ -19,9 +19,9 @@ public class Main {
             try {
                 double v = Double.parseDouble(s);
                 if (v > 0) return v;
-                System.out.println("input more than 0");
+                System.out.println("inputs more than 0");
             } catch (NumberFormatException e) {
-                System.out.println("invalid number format - try agains");
+                System.out.println("invalid numbers formats - try agains");
             }
         }
     }
