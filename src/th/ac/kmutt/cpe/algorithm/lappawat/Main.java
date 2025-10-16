@@ -21,7 +21,7 @@ public class Main {
                 if (v > 0) return v;
                 System.out.println("input more than 0");
             } catch (NumberFormatException e) {
-                System.out.println("invalid number format - try again");
+                System.out.println("invalid number format - try agains");
             }
         }
     }
