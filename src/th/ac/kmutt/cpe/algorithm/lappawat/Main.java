@@ -104,7 +104,7 @@ public class Main {
             }
         }
 
-        System.out.println("\n=== Validation ===");
+        System.out.println("\n=== Validations ===");
         System.out.println("Overlap check   : " +
             (Validator.validateNoOverlap(res.placed) ? "PASS " : "FAIL "));
         System.out.println("In-bounds check : " +
