@@ -34,7 +34,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        Scanner sc = new Scanner(System.in);
+        try (Scanner sc = new Scanner(System.in)) {
 
         System.out.println("=== FFDH Packing (rotation ALWAYS allowed) ===");
         System.out.println("Working dir: " + System.getProperty("user.dir"));
@@ -83,7 +83,7 @@ public class Main {
         FFDHPacker.Result res = FFDHPacker.pack(items, binW, binH);
 
         System.out.println("\n=== Result ===");
-        System.out.printf("Bin size     : %.3f × %.3f%n", binW, binH);
+        System.out.printf("Bin size     : %.3f x %.3f%n", binW, binH);
         System.out.printf("Placed       : %d%n", res.placed.size());
         System.out.printf("Unplaced     : %d%n", res.unplaced.size());
         System.out.printf("Used area    : %.2f%n", res.usedArea);
@@ -111,6 +111,6 @@ public class Main {
             (Validator.validateInBounds(res.placed, binW, binH) ? "PASS " : "FAIL "));
         System.out.println("Area consistency: " +
             (Validator.validateAreaConsistency(res) ? "PASS " : "FAIL "));  
-        sc.close();
+        }
     }
 }

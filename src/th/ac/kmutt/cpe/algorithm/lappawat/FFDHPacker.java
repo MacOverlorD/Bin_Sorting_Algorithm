@@ -60,65 +60,84 @@ public class FFDHPacker {
         shelves.add(new Shelf(0.0));
         double totalAreaPlaced = 0.0;
 
-        // วางทีละชิ้น
+        // วางทีละชิ้น (BFDH: Best-Fit Decreasing Height)
         for (Node nd : nodes) {
             Item r = nd.it;
-            boolean placed = false;
 
-            // orientation: ไม่หมุน, หมุน
+            final double EPS = 1e-9;
+            // Search best existing shelf (min leftover width) across both orientations
+            int bestShelfIdx = -1;
+            double bestW = 0, bestH = 0;
+            boolean bestRot = false;
+            double bestLeftover = Double.POSITIVE_INFINITY;
+            double bestShelfHeight = Double.POSITIVE_INFINITY;
+
             double[][] cand = new double[][] {
                 {r.w, r.h, 0},
                 {r.h, r.w, 1}
             };
 
-            outer:
             for (double[] c : cand) {
                 double w = c[0], h = c[1];
-                for (Shelf s : shelves) {
+                for (int si = 0; si < shelves.size(); si++) {
+                    Shelf s = shelves.get(si);
                     double newShelfHeight = Math.max(s.height, h);
-                    boolean fitW = s.usedW + w <= binW + 1e-9;
-                    boolean fitH = s.y + newShelfHeight <= binH + 1e-9;
+                    boolean fitW = s.usedW + w <= binW + EPS;
+                    boolean fitH = s.y + newShelfHeight <= binH + EPS;
                     if (fitW && fitH) {
-                        double x = s.usedW, y = s.y;
-                        s.usedW += w;
-                        s.height = newShelfHeight;
-                        boolean rotated = (c[2] == 1);
-                        placementsAdd(nd.id, x, y, w, h, rotated);
-                        totalAreaPlaced += w * h;
-                        placed = true;
-                        break outer;
+                        double leftover = binW - (s.usedW + w);
+                        // prefer smaller leftover; tie-breaker: smaller resulting shelf height
+                        if (leftover + 1e-12 < bestLeftover || (Math.abs(leftover - bestLeftover) < 1e-12 && newShelfHeight + 1e-12 < bestShelfHeight)) {
+                            bestLeftover = leftover;
+                            bestShelfIdx = si;
+                            bestW = w; bestH = h; bestRot = (c[2] == 1);
+                            bestShelfHeight = newShelfHeight;
+                        }
                     }
                 }
             }
 
-            if (!placed) {
-                // เปิดชั้นใหม่
-                Shelf last = shelves.get(shelves.size()-1);
-                double newY = last.y + last.height;
+            if (bestShelfIdx >= 0) {
+                // place on best existing shelf
+                Shelf s = shelves.get(bestShelfIdx);
+                double x = s.usedW, y = s.y;
+                s.usedW += bestW;
+                s.height = Math.max(s.height, bestH);
+                placementsAdd(nd.id, x, y, bestW, bestH, bestRot);
+                totalAreaPlaced += bestW * bestH;
+                continue;
+            }
 
-                double[][] cand2 = new double[][] {
-                    {r.w, r.h, 0},
-                    {r.h, r.w, 1}
-                };
+            // No existing shelf fits. Try to create a new shelf at the bottom (after last shelf)
+            Shelf last = shelves.get(shelves.size()-1);
+            double newY = last.y + last.height;
 
-                boolean placedOnNew = false;
-                for (double[] c : cand2) {
-                    double w = c[0], h = c[1];
-                    if (w <= binW + 1e-9 && newY + h <= binH + 1e-9) {
-                        Shelf s2 = new Shelf(newY);
-                        s2.usedW = w;
-                        s2.height = h;
-                        shelves.add(s2);
-                        boolean rotated = (c[2] == 1);
-                        placementsAdd(nd.id, 0.0, newY, w, h, rotated);
-                        totalAreaPlaced += w * h;
-                        placedOnNew = true;
-                        break;
+            int bestNewOri = -1;
+            double bestNewW = 0, bestNewH = 0;
+            double bestNewLeftover = Double.POSITIVE_INFINITY;
+            boolean bestNewRot = false;
+
+            for (double[] c : cand) {
+                double w = c[0], h = c[1];
+                if (w <= binW + EPS && newY + h <= binH + EPS) {
+                    double leftover = binW - w;
+                    if (leftover + 1e-12 < bestNewLeftover) {
+                        bestNewLeftover = leftover;
+                        bestNewOri = 1;
+                        bestNewW = w; bestNewH = h; bestNewRot = (c[2] == 1);
                     }
                 }
-                if (!placedOnNew) {
-                    unplacedAdd(r);
-                }
+            }
+
+            if (bestNewOri >= 0) {
+                Shelf s2 = new Shelf(newY);
+                s2.usedW = bestNewW;
+                s2.height = bestNewH;
+                shelves.add(s2);
+                placementsAdd(nd.id, 0.0, newY, bestNewW, bestNewH, bestNewRot);
+                totalAreaPlaced += bestNewW * bestNewH;
+            } else {
+                unplacedAdd(r);
             }
         }
 
